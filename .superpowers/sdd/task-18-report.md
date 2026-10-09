@@ -18,7 +18,7 @@ Left **⬜ verify locally:** ops masters UI, assignment notification UI, client 
 
 ## Git (docs repo)
 
-Branch `feat/mvp-ops`; commit includes only Task 18 files (checklist, plan README link, this report).
+Branch `feat/mvp-ops`, commit `8622fd2` (checklist, plan README link, this report only).
 
 ## Manual smoke
 
