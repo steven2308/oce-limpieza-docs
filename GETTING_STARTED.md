@@ -1,43 +1,43 @@
-# Limpieza — Getting started (local)
+# Castivas Cleaning — Getting started (local)
+
+Sibling repos/folders: `back/` (API) and `front/` (SPA), next to this `docs/` tree.
 
 ## Prerequisites
 
 - Docker and Docker Compose
+- Node **20** (for Vite/npm on the host)
 - Git
 
-## Clone repositories
-
-- Clone the **backend** and **frontend** repos (sibling folders or your preferred layout).
-- Replace `Limpieza` / `{{PROJECT_SLUG}}` placeholders per each repo README.
-
-## Environment
-
-- Copy backend env examples (e.g. `.envs.example/` → `.envs/.local/`) and adjust values.
-- Copy frontend `.env.example` → `.env` and set the API base URL.
-
-## Run backend
+## Backend
 
 ```bash
-cd backend
-docker-compose -f local.yml up
+cd back
+cp -r .envs.example/.local .envs/.local   # if missing
+docker compose -f local.yml build
+docker compose -f local.yml up -d postgres django
+docker compose -f local.yml exec django python manage.py migrate
+docker compose -f local.yml exec django python manage.py seed_mvp_demo
 ```
 
-Create a superuser when the API is up:
+API: **http://localhost:8010**
+
+## Frontend
 
 ```bash
-docker-compose -f local.yml run django python manage.py createsuperuser
+cd front
+cp .env.example .env     # VITE_API_URL=http://localhost:8010
+npm ci
+npm run dev              # http://localhost:8080
 ```
 
-## Run frontend
+Docker SPA alternative: `docker compose -f local.yml up --build` in `front/` → **http://localhost:8180**.
 
-```bash
-cd frontend
-docker-compose -f local.yml up
-```
+## Demo logins
 
-Open the app at **http://localhost:8080** (default local SPA port).
+Password `demo1234`: `ops@castivas.test`, `maria@abcpm.test`, `ana@castivas.test`, `carlos@castivas.test`.
 
 ## Next steps
 
-- Fill in [architecture/](architecture/) diagrams for Limpieza.
-- Add planning docs under [plan/](plan/) and delivery notes under [entregas/](entregas/).
+- [Phase 1 developer guide](guides/mvp-dev-guide.md)
+- [Phase 1 testing guide](guides/mvp-testing-guide.md)
+- [Architecture](architecture/) · [Plan](plan/)

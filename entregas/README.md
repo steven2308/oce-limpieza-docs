@@ -1,9 +1,13 @@
-# Limpieza — Entregas
+# Castivas Cleaning — Entregas
 
-**Delivery notes only** for **Limpieza**: what shipped per milestone (D1…Dn), client feedback, and status.
+**Delivery notes only**: what shipped per milestone, client feedback, and status.
 
-Do **not** put QA procedures, dev setup, or demo walkthroughs here — those belong in [guides/](../guides/).
+QA procedures and setup belong in [guides/](../guides/) ([MVP testing](../guides/mvp-testing-guide.md), [MVP dev](../guides/mvp-dev-guide.md)).
 
-- [ ] One note file per delivery (e.g. `d1-notas.md`) with date and scope
+| Note | Purpose |
+|------|---------|
+| [MVP-demo-checklist.md](MVP-demo-checklist.md) | Short smoke / demo sign-off (links to seed + Playwright) |
+
+- [ ] One note file per delivery with date and scope
 - [ ] Open questions and follow-ups from review sessions
 - [ ] Status table (pending / accepted / blocked)

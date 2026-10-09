@@ -1,6 +1,8 @@
 # MVP demo — manual smoke checklist
 
-Use after [seed](../../back/README.md#demo-data) and with backend + frontend running locally. Automated coverage: Playwright `front/e2e/mvp-happy-path.spec.ts` (Task 17).
+Full Phase 1 QA cases: [guides/mvp-testing-guide.md](../guides/mvp-testing-guide.md). Dev setup: [guides/mvp-dev-guide.md](../guides/mvp-dev-guide.md).
+
+Use after [seed](../../back/README.md#demo-data) and with backend + frontend running locally. Automated coverage: Playwright `front/e2e/mvp-happy-path.spec.ts`.
 
 ## Run stack + seed
 

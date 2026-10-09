@@ -11,7 +11,7 @@ Numbered planning documents for **Limpieza**. Keep one canonical file per topic.
 
 Source materials: [inputs/](../inputs/)
 
-**MVP demo:** [Manual smoke + seed/e2e checklist](../entregas/MVP-demo-checklist.md) (Castivas Cleaning implementation). Backend seed: [back/README.md](../../back/README.md#demo-data); Playwright: [front/README.md](../../front/README.md#end-to-end-tests-playwright).
+**Phase 1 guides:** [Developer](../guides/mvp-dev-guide.md) · [Testing / QA](../guides/mvp-testing-guide.md) · [Demo smoke checklist](../entregas/MVP-demo-checklist.md). Backend seed: [back/README.md](../../back/README.md#demo-data); Playwright: [front/README.md](../../front/README.md#end-to-end-tests-playwright).
 
 - [ ] Validate [requerimientos](2.%20Requerimientos.md) with Castivas / stakeholders; then lock [estimación](3.%20Estimaci%C3%B3n.md)
 - [x] Cross-link [entregas/](../entregas/) — [MVP demo checklist](../entregas/MVP-demo-checklist.md)
