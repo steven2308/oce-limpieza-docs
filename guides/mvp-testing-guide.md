@@ -1,6 +1,6 @@
 # Fase 1 (MVP) — Guía de pruebas
 
-**Estado:** lista para ejecutar (actualizada tras cierre de huecos MVP: reportes UI, edición SR, dashboard, edificios, casa unifamiliar, fotos de jornada)  
+**Estado:** lista para ejecutar (actualizada tras dueños en unidades: sin edificios ni compañías; reportes UI, edición SR, dashboard, casa unifamiliar, fotos de jornada)  
 **Audiencia:** QA / desarrollador que verifica la Fase 1 antes de demo con cliente o UAT  
 **Fuente de alcance:** [plan/2. Requerimientos.md](../plan/2.%20Requerimientos.md) §6 MVP  
 
@@ -18,9 +18,9 @@ Esta guía debe demostrar:
 - El cliente (u Ops) puede crear un SR con snapshot de Rate y número `SR-######` (unidad existente o captura de dirección).
 - Operations edita datos del SR antes de asignar, ve conteos en la cola, asigna/reasigna, cierra tras completar y exporta CSV desde **Informes**.
 - El empleado ejecuta la jornada (aceptar → clock in/out → **foto** → completar) solo en trabajos asignados.
-- La tabla de servicios de cada rol está acotada (sin fugas entre empresas ni entre asignados).
+- La tabla de servicios de cada rol está acotada (sin fugas entre dueños ni entre asignados).
 - La visibilidad de precio cliente vs beneficio empleado cumple las reglas por rol.
-- Maestros ops: categorías, servicios, tarifas, propiedades, **edificios**, unidades.
+- Maestros ops: categorías, servicios, tarifas, propiedades y unidades. El dueño vive en la unidad.
 - El toggle ES/EN funciona en el copy de ops (nav, pantallas, Perfil).
 - La creación básica de queja funciona para cliente/ops.
 
@@ -39,20 +39,25 @@ Esta guía debe demostrar:
 
 | App | URL |
 |-----|-----|
-| Frontend (Vite) | http://localhost:8080 |
+| Frontend (`npm run dev`) | http://localhost:8080 |
+| Frontend (Docker, `front/local.yml`) | http://localhost:8180 |
 | API | http://localhost:8010 |
 | Admin (opcional) | http://localhost:8010/admin/ |
+| Playwright (lo levanta el e2e) | http://localhost:8090 |
+
+El navegador llama a la API en el host (`:8010`) tanto desde `:8080` como desde `:8180`. CORS local permite esos tres orígenes. Postgres del compose está en el host `:5440` (contenedor `5432`); no hace falta abrirlo para esta guía.
 
 **Credenciales** (contraseña `demo1234`):
 
 | Email | Rol |
 |-------|-----|
 | `ops@castivas.test` | Operations |
-| `maria@abcpm.test` | Cliente (ABC Property Management) |
+| `maria@abcpm.test` | Cliente (dueña de ABC Apartments y ABC Riverside) |
+| `james@harborhomes.test` | Cliente (dueño de Pier View Condos y Harbor Townhomes) |
 | `ana@castivas.test` | Empleado |
 | `carlos@castivas.test` | Empleado |
 
-Unidad demo para crear: **ABC Apartments / Building 5 / Unit 215**  
+Unidad demo para crear: **ABC Apartments / Unit 215** (dueña Maria López)  
 (dirección seed: 215 West 95th St, NY 10025).
 
 ### Rutas útiles (SPA)
@@ -62,7 +67,7 @@ Unidad demo para crear: **ABC Apartments / Building 5 / Unit 215**
 | Ops | `/queue` | Cola de operaciones (conteos + pendientes) |
 | Todos | `/services` | Solicitudes |
 | Cliente / Ops | `/services/new` | Nueva solicitud |
-| Ops | `/masters` | Catálogo (incluye Edificios) |
+| Ops | `/masters` | Catálogo (propiedades y unidades) |
 | Ops | `/reports` | Informes (CSV horas/montos) |
 | Cliente / Ops | `/complaints/new` | Quejas |
 | Empleado | `/services/:id/journey` | Jornada (desde detalle) |
@@ -71,7 +76,7 @@ Unidad demo para crear: **ABC Apartments / Building 5 / Unit 215**
 ### Precondiciones (detener la corrida si alguna falla)
 
 - [ ] `docker compose -f local.yml up -d postgres django` en `back/` termina bien
-- [ ] Migraciones aplicadas (incluye `ops.0009_journeyphoto`): `python manage.py migrate`
+- [ ] Migraciones aplicadas (incluye `ops.0011_owners_on_units`): `python manage.py migrate`
 - [ ] Seed aplicado: `python manage.py seed_mvp_demo` (sin error; se puede re-ejecutar)
 - [ ] El `.env` del frontend tiene `VITE_API_URL=http://localhost:8010`
 - [ ] El navegador puede iniciar sesión sin fallos de CORS
@@ -95,7 +100,7 @@ Ejecuta esto primero; atrapa la mayoría de regresiones.
 ```bash
 cd back
 docker compose -f local.yml run --rm django pytest cleaning/ops -q
-# Esperado: 125+ passed (el conteo puede crecer)
+# Esperado: 126+ passed (el conteo puede crecer)
 ```
 
 Suite completa:
@@ -124,10 +129,12 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-Opcional contra un SPA ya en marcha:
+Opcional contra un SPA ya en marcha (elige el puerto que esté sirviendo la UI):
 
 ```bash
 E2E_BASE_URL=http://localhost:8080 npm run test:e2e
+# Docker SPA:
+E2E_BASE_URL=http://localhost:8180 npm run test:e2e
 ```
 
 Cubre: cliente crea SR → ops asigna a Ana → jornada **con foto** → listas acotadas → el empleado nunca ve precio cliente / trabajos ajenos → ops cierra.
@@ -148,9 +155,9 @@ Usa un perfil limpio o ventana privada. Preferible crear un **SR nuevo** para no
 
 1. Inicia sesión como `ops@castivas.test`.
 2. Abre **Catálogo** (`/masters`).
-3. Revisa pestañas: Categorías, Servicios, Tarifas, Propiedades, **Edificios**, Unidades.
+3. Revisa pestañas: Categorías, Servicios, Tarifas, Propiedades, Unidades.
 4. Confirma que existen categorías A/B/C y rates (p. ej. regular × B).
-5. En **Edificios**, confirma Building 5 bajo ABC Apartments (o crea uno de prueba bajo una propiedad).
+5. En **Unidades**, confirma la unidad 215 de ABC Apartments, dueña Maria López (o crea una de prueba bajo una propiedad).
 
 **Esperado:** tablas cargan; CRUD básico operable solo para Ops.
 
@@ -179,10 +186,10 @@ Usa un perfil limpio o ventana privada. Preferible crear un **SR nuevo** para no
 ### D. Ops crea SR por captura (casa unifamiliar) — opcional pero recomendado
 
 1. Como Ops, `/services/new` → **Registrar dirección nueva**.
-2. Activa **Casa unifamiliar** (oculta etiqueta de unidad; fuerza unidad `1` / edificio Main).
-3. Elige propietario ABC, completa dirección distinta a la del seed, área/baños, servicio y agenda; envía.
+2. Activa **Casa unifamiliar** (oculta la etiqueta de unidad y fuerza la unidad `1`).
+3. Elige propietaria **Maria López**, completa una dirección distinta a la del seed, área/baños, servicio y agenda; envía.
 
-**Esperado:** SR creado; en maestros aparece la propiedad/unidad `1` bajo Main.
+**Esperado:** SR creado; en maestros aparece la propiedad y la unidad `1`, dueña Maria López. No hay edificio.
 
 - [ ] Pass / Fail — ________ · N/A si se omite — ________
 
@@ -256,7 +263,7 @@ Usa un perfil limpio o ventana privada. Preferible crear un **SR nuevo** para no
 | P1 | Empleado no puede crear SR | Login Ana → abrir `/services/new` o POST create | UI bloqueada / API 403 | |
 | P2 | Trabajos empleado A ≠ B | Login `carlos@castivas.test` tras asignar un SR nuevo a Ana | Carlos **no** ve el SR de Ana | |
 | P3 | Empleado oculta precio cliente | Como Ana en un SR asignado | Sin precio `$` del cliente; el beneficio puede verse | |
-| P4 | Cliente solo ve su empresa | Como Maria, lista de servicios | Solo filas ABC; sin otras empresas | |
+| P4 | Cliente solo ve sus unidades | Como Maria, lista de servicios | Solo solicitudes de sus unidades; sin las de James | |
 | P5 | Cliente no puede asignar/cerrar/editar | Como Maria en detalle de SR | Sin edit/assign/close (o API 403) | |
 | P6 | Ops ve cola + informes | Como Ops `/queue` y `/reports` | Conteos y descarga CSV | |
 | P7 | Maestros solo ops | Como Maria o Ana abrir `/masters` | Redirect / denegado | |

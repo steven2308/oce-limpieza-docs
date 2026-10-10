@@ -24,11 +24,11 @@ All passwords: **`demo1234`**
 | Email | Role |
 |-------|------|
 | `ops@castivas.test` | Operations |
-| `maria@abcpm.test` | Client (ABC Property Management) |
+| `maria@abcpm.test` | Client (owns ABC Apartments units) |
 | `ana@castivas.test` | Employee (Ana García) |
 | `carlos@castivas.test` | Employee |
 
-Demo property: ABC Apartments → Building 5 → **Unit 215** (category B). Sample SRs exist after seed (pending, assigned to Ana, closed).
+Demo property: ABC Apartments → **Unit 215** (category B), owned by Maria López. Sample SRs exist after seed (pending, assigned to Ana, closed).
 
 ## Run Playwright e2e
 

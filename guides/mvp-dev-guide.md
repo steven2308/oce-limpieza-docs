@@ -78,11 +78,12 @@ Contraseña para todos: **`demo1234`**
 | Email | Rol | Grupo / perfil |
 |-------|-----|----------------|
 | `ops@castivas.test` | Operations | `operations` |
-| `maria@abcpm.test` | Cliente | contacto de ABC Property Management |
+| `maria@abcpm.test` | Cliente | dueña de las unidades de ABC Apartments y ABC Riverside |
+| `james@harborhomes.test` | Cliente | dueño de Pier View Condos y Harbor Townhomes |
 | `ana@castivas.test` | Empleado | `EmployeeProfile` activo |
 | `carlos@castivas.test` | Empleado | `EmployeeProfile` activo |
 
-Árbol demo: ABC Apartments (215 West 95th St, NY 10025 + geo) → Building 5 → **Unit 215** (categoría B). Captura unificada: `POST /api/properties/capture/` reutiliza propiedad por dirección+ZIP; flag `is_single_family` fuerza unidad `1` bajo edificio Main. El seed también crea servicios Form. 1, categorías A/B/C, Rates A/B/C y SRs de ejemplo.
+Demo: ABC Apartments (215 West 95th St, NY 10025 + geo) → **Unit 215** (categoría B), dueña Maria López. Captura unificada: `POST /api/properties/capture/` reutiliza la propiedad por dirección+ZIP para cualquier dueño; si la misma unidad ya es de otro usuario, responde 400. `is_single_family` fuerza la unidad `1`. El seed también crea servicios Form. 1, categorías A/B/C, Rates A/B/C y SRs de ejemplo.
 
 ---
 
@@ -122,12 +123,12 @@ Se resuelven en `/api/users/me/` como `role`: `operations` | `employee` | `clien
 
 | Capacidad | Operations | Cliente | Empleado |
 |-----------|:----------:|:-------:|:--------:|
-| Maestros (categorías, rates, empresas, propiedades, edificios, unidades) | ✓ | | |
+| Maestros (categorías, rates, propiedades, unidades) | ✓ | | |
 | Cola ops + dashboard de conteos | ✓ | | |
 | Editar SR (`pending_review` / `assigned`) | ✓ | | |
 | Asignar / cerrar | ✓ | | |
 | Crear SR | ✓ | ✓ | |
-| Listar SR (acotado) | todos | su empresa | asignados a sí |
+| Listar SR (acotado) | todos | unidades propias | asignados a sí |
 | Ver precio cliente | ✓ | ✓ | |
 | Ver beneficio empleado | ✓ | | ✓ (propio) |
 | Acciones de jornada + fotos | | | solo asignado |
@@ -147,7 +148,7 @@ Prefijo: `/api/`. Cookie de sesión tras `POST /api/auth/login/`.
 | `service-requests/` | Listar/crear/detalle/`PATCH` (ops, solo pending/assigned); acciones: `assign/`, `close/`, jornada (`accept/`, `reject/`, `en_route/`, `arrive/`, `clock_in/`, `break_start/`, `break_end/`, `clock_out/`, `complete/`), `photos/` (GET/POST multipart, máx. 10) |
 | `employees/` | Empleados activos para el picker de asignación |
 | `service-types/`, `services/`, `property-categories/`, `rates/` | CRUD de catálogo (ops) |
-| `client-companies/`, `properties/`, `buildings/`, `units/` | Jerarquía |
+| `owners/`, `properties/`, `units/` | Dueños (usuarios client), predios y unidades |
 | `properties/capture/` | Alta/reuso por dirección+ZIP; `is_single_family` → unidad `1` |
 | `complaints/` | Crear / gestionar |
 | `reports/hours.csv` | Export ops (query `from`, `to`) |
@@ -236,7 +237,7 @@ No inviertas esfuerzo de Fase 1 aquí salvo que producto reabra el alcance:
 | Galería de fotos (UI rica / lightbox) | Upload + obligatoriedad al complete listos; pulido visual opcional |
 | Logo / branding final Castivas | Favicon SVG en `front/public/favicon.svg` |
 
-**Ya cubierto en Fase 1 (no listar como pendiente):** dashboard de conteos (RF-REP-1), edición SR antes de asignar (RF-OPS-1), fotos de jornada con gate al complete (RF-EMP-4), UI de Informes CSV, pestaña Edificios, atajo casa unifamiliar.
+**Ya cubierto en Fase 1 (no listar como pendiente):** dashboard de conteos (RF-REP-1), edición SR antes de asignar (RF-OPS-1), fotos de jornada con gate al complete (RF-EMP-4), UI de Informes CSV, atajo casa unifamiliar.
 
 ---
 
