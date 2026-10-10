@@ -38,6 +38,6 @@ Password `demo1234`: `ops@castivas.test`, `maria@abcpm.test`, `ana@castivas.test
 
 ## Next steps
 
-- [Phase 1 developer guide](guides/mvp-dev-guide.md)
-- [Phase 1 testing guide](guides/mvp-testing-guide.md)
+- [Guía de desarrollo Fase 1](guides/mvp-dev-guide.md)
+- [Guía de pruebas Fase 1](guides/mvp-testing-guide.md)
 - [Architecture](architecture/) · [Plan](plan/)

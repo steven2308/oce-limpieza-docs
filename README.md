@@ -10,7 +10,7 @@ Project documentation for **Castivas Cleaning** (Phase 1 MVP). Use this tree for
 | [inputs/](inputs/) | Source materials index (meetings, exports, images) |
 | [plan/](plan/) | Numbered planning docs (as-is, RFs, estimate, schedule) |
 | [entregas/](entregas/) | Delivery notes, client feedback, and status per milestone |
-| [guides/](guides/) | [MVP dev guide](guides/mvp-dev-guide.md), [MVP testing guide](guides/mvp-testing-guide.md) |
+| [guides/](guides/) | [Guía de desarrollo MVP](guides/mvp-dev-guide.md), [Guía de pruebas MVP](guides/mvp-testing-guide.md) |
 | [GETTING_STARTED.md](GETTING_STARTED.md) | Clone, env setup, and local run |
 | [superpowers/](superpowers/) | Agent design specs and implementation plans |
 

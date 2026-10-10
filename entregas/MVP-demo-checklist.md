@@ -1,6 +1,6 @@
 # MVP demo — manual smoke checklist
 
-Full Phase 1 QA cases: [guides/mvp-testing-guide.md](../guides/mvp-testing-guide.md). Dev setup: [guides/mvp-dev-guide.md](../guides/mvp-dev-guide.md).
+Casos QA completos de Fase 1: [guides/mvp-testing-guide.md](../guides/mvp-testing-guide.md). Setup de desarrollo: [guides/mvp-dev-guide.md](../guides/mvp-dev-guide.md).
 
 Use after [seed](../../back/README.md#demo-data) and with backend + frontend running locally. Automated coverage: Playwright `front/e2e/mvp-happy-path.spec.ts`.
 

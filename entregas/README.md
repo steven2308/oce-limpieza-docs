@@ -2,7 +2,7 @@
 
 **Delivery notes only**: what shipped per milestone, client feedback, and status.
 
-QA procedures and setup belong in [guides/](../guides/) ([MVP testing](../guides/mvp-testing-guide.md), [MVP dev](../guides/mvp-dev-guide.md)).
+Procedimientos de QA y setup en [guides/](../guides/) ([pruebas MVP](../guides/mvp-testing-guide.md), [desarrollo MVP](../guides/mvp-dev-guide.md)).
 
 | Note | Purpose |
 |------|---------|

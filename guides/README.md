@@ -1,11 +1,11 @@
-# Castivas Cleaning — Guides
+# Castivas Cleaning — Guías
 
-**QA, development, and demo guides.** Delivery status notes live in [entregas/](../entregas/).
+**Guías de QA, desarrollo y demo.** Las notas de estado de entrega viven en [entregas/](../entregas/).
 
-| Guide | Audience |
-|-------|----------|
-| [mvp-dev-guide.md](mvp-dev-guide.md) | Developers — local stack, roles, API map, day-to-day commands |
-| [mvp-testing-guide.md](mvp-testing-guide.md) | QA / UAT — automated commands + pass/fail cases for Phase 1 |
-| [MVP demo smoke checklist](../entregas/MVP-demo-checklist.md) | Short live-demo path (seed + Playwright + smoke) |
+| Guía | Audiencia |
+|------|-----------|
+| [mvp-dev-guide.md](mvp-dev-guide.md) | Desarrollo — stack local, roles, mapa API, comandos del día a día |
+| [mvp-testing-guide.md](mvp-testing-guide.md) | QA / UAT — comandos automatizados + casos pass/fail de Fase 1 |
+| [Checklist smoke de demo MVP](../entregas/MVP-demo-checklist.md) | Ruta corta de demo en vivo (seed + Playwright + smoke) |
 
-Environment overview: [GETTING_STARTED.md](../GETTING_STARTED.md). Requirements: [plan/2. Requerimientos.md](../plan/2.%20Requerimientos.md).
+Entorno: [GETTING_STARTED.md](../GETTING_STARTED.md). Requisitos: [plan/2. Requerimientos.md](../plan/2.%20Requerimientos.md).

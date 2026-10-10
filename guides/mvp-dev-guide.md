@@ -1,55 +1,55 @@
-# Phase 1 (MVP) — Developer guide
+# Fase 1 (MVP) — Guía de desarrollo
 
-How to run and extend the Castivas Cleaning MVP locally. Product scope: [plan/2. Requerimientos.md](../plan/2.%20Requerimientos.md) §6 MVP. Architecture sketch: [architecture/](../architecture/).
+Cómo levantar y extender el MVP de Castivas Cleaning en local. Alcance de producto: [plan/2. Requerimientos.md](../plan/2.%20Requerimientos.md) §6 MVP. Esbozo de arquitectura: [architecture/](../architecture/).
 
-Repos: `back/` and `front/` sit next to this `docs/` folder in the monorepo layout.
+Repos: `back/` y `front/` están al lado de esta carpeta `docs/` en el monorepo.
 
 ---
 
 ## Stack
 
-| Layer | Tech | Local URL |
-|-------|------|-----------|
-| API | Django + DRF (`cleaning` package) | http://localhost:8010 |
+| Capa | Tecnología | URL local |
+|------|------------|-----------|
+| API | Django + DRF (paquete `cleaning`) | http://localhost:8010 |
 | SPA | Vue 3 + Vuetify + Pinia + Vite | http://localhost:8080 (`npm run dev`) |
 | SPA (Docker) | `front/local.yml` | http://localhost:8180 |
-| Postgres | Docker | host `5440` → container `5432` |
-| Redis / Celery | Docker (optional for notifications) | Redis host `6380` |
+| Postgres | Docker | host `5440` → contenedor `5432` |
+| Redis / Celery | Docker (opcional para notificaciones) | Redis host `6380` |
 
-Auth is **session + CSRF** (cookies), not bearer tokens for the SPA.
+La autenticación del SPA es **sesión + CSRF** (cookies), no tokens bearer.
 
 ---
 
-## Prerequisites
+## Requisitos previos
 
 - Docker + Docker Compose
-- Node **20** (nvm recommended) for the frontend
+- Node **20** (se recomienda nvm) para el frontend
 - Git
 
 ---
 
-## First-time setup
+## Puesta en marcha (primera vez)
 
 ### Backend
 
 ```bash
 cd back
-cp -r .envs.example/.local .envs/.local   # if .envs/ is missing
+cp -r .envs.example/.local .envs/.local   # si falta .envs/
 docker compose -f local.yml build
 docker compose -f local.yml up -d postgres django
 docker compose -f local.yml exec django python manage.py migrate
 docker compose -f local.yml exec django python manage.py seed_mvp_demo
 ```
 
-`seed_mvp_demo` requires `DEBUG=True` (local default) or `--force`. It is idempotent.
+`seed_mvp_demo` exige `DEBUG=True` (por defecto en local) o `--force`. Es idempotente.
 
-Optional full stack (Redis, Celery, scheduler):
+Stack completo opcional (Redis, Celery, scheduler):
 
 ```bash
 docker compose -f local.yml up -d
 ```
 
-Admin / Django shell:
+Admin / shell de Django:
 
 ```bash
 docker compose -f local.yml exec django python manage.py createsuperuser
@@ -66,130 +66,130 @@ npm ci
 npm run dev            # http://localhost:8080
 ```
 
-If login fails with CORS errors, confirm the SPA origin is listed in `back/config/settings/local.py` (`CORS_ALLOWED_ORIGINS`). Defaults include `:8080` and Playwright `:8090`.
+Si el login falla por CORS, confirma que el origen del SPA está en `back/config/settings/local.py` (`CORS_ALLOWED_ORIGINS`). Por defecto incluye `:8080`, Docker Compose `:8180` y Playwright `:8090`.
 
 ---
 
-## Demo users (seed)
+## Usuarios demo (seed)
 
-Password for all: **`demo1234`**
+Contraseña para todos: **`demo1234`**
 
-| Email | Role | Group / profile |
-|-------|------|-----------------|
+| Email | Rol | Grupo / perfil |
+|-------|-----|----------------|
 | `ops@castivas.test` | Operations | `operations` |
-| `maria@abcpm.test` | Client | contact of ABC Property Management |
-| `ana@castivas.test` | Employee | active `EmployeeProfile` |
-| `carlos@castivas.test` | Employee | active `EmployeeProfile` |
+| `maria@abcpm.test` | Cliente | contacto de ABC Property Management |
+| `ana@castivas.test` | Empleado | `EmployeeProfile` activo |
+| `carlos@castivas.test` | Empleado | `EmployeeProfile` activo |
 
-Demo tree: ABC Apartments → Building 5 → **Unit 215** (category B). Seed also creates Form. 1–style services, A/B/C categories, rates, and sample SRs.
+Árbol demo: ABC Apartments (215 West 95th St, NY 10025 + geo) → Building 5 → **Unit 215** (categoría B). Captura unificada: `POST /api/properties/capture/` reutiliza propiedad por dirección+ZIP. El seed también crea servicios Form. 1, categorías A/B/C, Rates A/B/C y SRs de ejemplo.
 
 ---
 
-## Repo map
+## Mapa del repositorio
 
 ### Backend (`back/`)
 
-| Path | Role |
-|------|------|
-| `cleaning/ops/models/` | Catalog, parties, properties, SR, journey, complaints |
-| `cleaning/ops/services/` | Rate resolve, assign, journey, scoping, complaints |
-| `cleaning/ops/api/` | DRF serializers, permissions, viewsets |
-| `cleaning/ops/management/commands/seed_mvp_demo.py` | Demo seed |
-| `cleaning/ops/tests/` | Pytest suite for ops |
-| `config/api_router.py` | All `/api/…` routes |
-| `config/settings/local.py` | CORS, DEBUG, local DB |
+| Ruta | Rol |
+|------|-----|
+| `cleaning/ops/models/` | Catálogo, parties, predios, SR, jornada, quejas |
+| `cleaning/ops/services/` | Resolución de Rate, asignación, jornada, scoping, quejas |
+| `cleaning/ops/api/` | Serializers DRF, permisos, viewsets |
+| `cleaning/ops/management/commands/seed_mvp_demo.py` | Seed demo |
+| `cleaning/ops/tests/` | Suite pytest de ops |
+| `config/api_router.py` | Todas las rutas `/api/…` |
+| `config/settings/local.py` | CORS, DEBUG, DB local |
 
-Package rename: Python package is **`cleaning`** (not `limpieza`).
+El paquete Python se llama **`cleaning`** (ya no `limpieza`).
 
 ### Frontend (`front/`)
 
-| Path | Role |
-|------|------|
-| `src/services/opsApi.ts` | Ops HTTP client |
-| `src/utils/roles.ts` | `canAccess` / role helpers |
-| `src/pages/ops/*` | Masters, queue, SR create/detail, journey, complaints |
-| `src/i18n/opsCopy.ts` | ES/EN ops copy |
-| `src/router/index.ts` | Routes + `meta.roles` |
-| `e2e/` | Playwright happy path |
+| Ruta | Rol |
+|------|-----|
+| `src/services/opsApi.ts` | Cliente HTTP de ops |
+| `src/utils/roles.ts` | `canAccess` / helpers de rol |
+| `src/pages/ops/*` | Maestros, cola, alta/detalle SR, jornada, quejas |
+| `src/i18n/opsCopy.ts` | Copy ops ES/EN |
+| `src/router/index.ts` | Rutas + `meta.roles` |
+| `e2e/` | Happy path Playwright |
 
 ---
 
-## Roles and permissions
+## Roles y permisos
 
-Resolved in `/api/users/me/` as `role`: `operations` | `employee` | `client` (staff/superuser treated as operations-capable).
+Se resuelven en `/api/users/me/` como `role`: `operations` | `employee` | `client` (staff/superuser se tratan como capaces de operations).
 
-| Capability | Operations | Client | Employee |
-|------------|:----------:|:------:|:--------:|
-| Masters (categories, rates, companies, …) | ✓ | | |
-| Ops queue + assign/close | ✓ | | |
-| Create SR | ✓ | ✓ | |
-| List SR (scoped) | all | own company | assigned to self |
-| See client price | ✓ | ✓ | |
-| See employee benefit | ✓ | | ✓ (own) |
-| Journey actions | | | assigned only |
-| Create complaint | ✓ | ✓ | |
-| Hours CSV report | ✓ | | |
+| Capacidad | Operations | Cliente | Empleado |
+|-----------|:----------:|:-------:|:--------:|
+| Maestros (categorías, rates, empresas, …) | ✓ | | |
+| Cola ops + asignar/cerrar | ✓ | | |
+| Crear SR | ✓ | ✓ | |
+| Listar SR (acotado) | todos | su empresa | asignados a sí |
+| Ver precio cliente | ✓ | ✓ | |
+| Ver beneficio empleado | ✓ | | ✓ (propio) |
+| Acciones de jornada | | | solo asignado |
+| Crear queja | ✓ | ✓ | |
+| Reporte CSV de horas | ✓ | | |
 
-Router guard: `meta.roles` on Vue routes; API enforces the same rules (do not trust the UI alone).
-
----
-
-## Main API surface (MVP)
-
-Prefix: `/api/`. Session cookie required after `POST /api/auth/login/`.
-
-| Resource | Notes |
-|----------|--------|
-| `service-requests/` | List/create/retrieve; actions: `assign/`, `close/`, journey (`accept/`, `reject/`, `en_route/`, `arrive/`, `clock_in/`, `break_start/`, `break_end/`, `clock_out/`, `complete/`) |
-| `employees/` | Active employees for assignment picker |
-| `service-types/`, `services/`, `property-categories/`, `rates/` | Catalog CRUD (ops) |
-| `client-companies/`, `properties/`, `buildings/`, `units/` | Hierarchy |
-| `complaints/` | Create / manage |
-| `reports/hours.csv` | Ops export (`from`, `to` query params) |
-| `users/me/` | Profile + `role` |
-| `notifications/` | In-app notifications (assignment, etc.) |
-
-Create SR snapshots `client_price` / `employee_benefit` from `resolve_rate`. Missing rate → 400. Employees cannot create SRs (403).
+Guard del router: `meta.roles` en rutas Vue; la API aplica las mismas reglas (no confiar solo en la UI).
 
 ---
 
-## Domain flow (happy path)
+## Superficie API principal (MVP)
+
+Prefijo: `/api/`. Cookie de sesión tras `POST /api/auth/login/`.
+
+| Recurso | Notas |
+|---------|--------|
+| `service-requests/` | Listar/crear/detalle; acciones: `assign/`, `close/`, jornada (`accept/`, `reject/`, `en_route/`, `arrive/`, `clock_in/`, `break_start/`, `break_end/`, `clock_out/`, `complete/`) |
+| `employees/` | Empleados activos para el picker de asignación |
+| `service-types/`, `services/`, `property-categories/`, `rates/` | CRUD de catálogo (ops) |
+| `client-companies/`, `properties/`, `buildings/`, `units/` | Jerarquía |
+| `complaints/` | Crear / gestionar |
+| `reports/hours.csv` | Export ops (query `from`, `to`) |
+| `users/me/` | Perfil + `role` |
+| `notifications/` | Notificaciones in-app (asignación, etc.) |
+
+Al crear un SR se hace snapshot de `client_price` / `employee_benefit` vía `resolve_rate`. Sin Rate → 400. Los empleados no pueden crear SRs (403).
+
+---
+
+## Flujo de dominio (happy path)
 
 ```text
-Client/Ops creates SR (Rate snapshot)
-    → Ops assigns employee (+ notify)
-    → Employee accept → … → clock_in / breaks → clock_out → complete
-    → Ops closes SR
-    → Ops exports hours/amounts CSV
+Cliente/Ops crea SR (snapshot de Rate)
+    → Ops asigna empleado (+ notifica)
+    → Empleado accept → … → clock_in / breaks → clock_out → complete
+    → Ops cierra el SR
+    → Ops exporta CSV de horas/montos
 ```
 
-Reassign to a different employee writes a `reassigned` journey boundary so the new assignee can accept.
+Reasignar a otro empleado escribe un límite de jornada `reassigned` para que el nuevo asignado pueda aceptar.
 
-Statuses of interest: `pending_review` → `assigned` → journey → `completed` → `closed` (exact enum in `ServiceRequestStatus`).
+Estados relevantes: `pending_review` → `assigned` → jornada → `completed` → `closed` (enum exacto en `ServiceRequestStatus`).
 
 ---
 
-## Day-to-day commands
+## Comandos del día a día
 
 ```bash
-# Backend tests (ops only — fast)
+# Tests backend (solo ops — rápido)
 docker compose -f local.yml run --rm django pytest cleaning/ops -q
 
-# Full backend suite
+# Suite backend completa
 docker compose -f local.yml run --rm django pytest
 
-# Migrations after model changes
+# Migraciones tras cambios de modelo
 docker compose -f local.yml run --rm django python manage.py makemigrations
 docker compose -f local.yml run --rm django python manage.py migrate
 
-# Frontend unit tests
+# Tests unitarios frontend
 cd front && npm test
 
-# Frontend e2e (API up + seeded)
+# e2e frontend (API arriba + seed)
 cd front && npm run test:e2e
 ```
 
-**Docker tip:** migrations generated inside the container may be owned by `root`. Fix ownership before git operations:
+**Tip Docker:** las migraciones generadas dentro del contenedor pueden quedar con dueño `root`. Corrige la propiedad antes de operaciones git:
 
 ```bash
 docker compose -f local.yml run --rm --no-deps django \
@@ -198,37 +198,37 @@ docker compose -f local.yml run --rm --no-deps django \
 
 ---
 
-## Adding an MVP feature (checklist)
+## Añadir una feature del MVP (checklist)
 
-1. Confirm the RF is in **fase 1** (not Fase 2/3) in [Requerimientos](../plan/2.%20Requerimientos.md).
-2. Backend: failing pytest in `cleaning/ops/tests/` → model/service → API → green.
-3. Frontend: Vitest for pure helpers; page wired through `opsApi` + `opsCopy` ES/EN.
-4. Role scoping: assert other roles get 403/empty list as required.
-5. Update seed only if demos need new fixtures; keep `seed_mvp_demo` idempotent.
-6. Extend Playwright only for critical cross-role paths.
-
----
-
-## Known MVP gaps / deferred
-
-Do not spend Phase 1 effort here unless product reopens scope:
-
-| Topic | Status |
-|-------|--------|
-| Native app / PWA / background geofence | Out (web + GPS on tap) |
-| Smart employee suggestion (distance/load) | Fase 2 |
-| Supervisor visits | Fase 2 |
-| QuickBooks / inventory | Fase 3 |
-| Ops dashboard counts (RF-REP-1) | Thin / incomplete vs RF |
-| Rich SR edit before assign (RF-OPS-1) | Partial |
-| Photo gallery limits UX | Journey supports evidence; polish may follow |
-| Castivas `public/icon.png` | Still placeholder |
+1. Confirma que el RF está en **fase 1** (no Fase 2/3) en [Requerimientos](../plan/2.%20Requerimientos.md).
+2. Backend: pytest en rojo en `cleaning/ops/tests/` → modelo/servicio → API → verde.
+3. Frontend: Vitest para helpers puros; pantalla cableada con `opsApi` + `opsCopy` ES/EN.
+4. Scoping por rol: otros roles deben recibir 403 / lista vacía según corresponda.
+5. Actualiza el seed solo si el demo necesita fixtures nuevos; mantén `seed_mvp_demo` idempotente.
+6. Extiende Playwright solo en caminos críticos entre roles.
 
 ---
 
-## Related docs
+## Huecos conocidos / diferidos del MVP
 
-- [MVP testing guide](mvp-testing-guide.md)
-- [MVP demo smoke checklist](../entregas/MVP-demo-checklist.md)
+No inviertas esfuerzo de Fase 1 aquí salvo que producto reabra el alcance:
+
+| Tema | Estado |
+|------|--------|
+| App nativa / PWA / geofence en segundo plano | Fuera (web + GPS al abrir) |
+| Sugerencia inteligente de empleado (distancia/carga) | Fase 2 |
+| Visitas de supervisor | Fase 2 |
+| QuickBooks / inventario | Fase 3 |
+| Contadores del dashboard ops (RF-REP-1) | Delgado / incompleto vs RF |
+| Edición rica del SR antes de asignar (RF-OPS-1) | Parcial |
+| UX de galería de fotos | La jornada admite evidencia; el pulido puede seguir |
+| Logo final de Castivas | Favicon SVG teal temporal (`public/favicon.svg`) |
+
+---
+
+## Documentos relacionados
+
+- [Guía de pruebas MVP](mvp-testing-guide.md)
+- [Checklist smoke de demo MVP](../entregas/MVP-demo-checklist.md)
 - [back/README.md](../../back/README.md) · [front/README.md](../../front/README.md)
-- Implementation plan: [superpowers/plans/2026-10-09-mvp-castivas-cleaning.md](../superpowers/plans/2026-10-09-mvp-castivas-cleaning.md)
+- Plan de implementación: [superpowers/plans/2026-10-09-mvp-castivas-cleaning.md](../superpowers/plans/2026-10-09-mvp-castivas-cleaning.md)

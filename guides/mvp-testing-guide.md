@@ -1,101 +1,101 @@
-# Phase 1 (MVP) — Testing guide
+# Fase 1 (MVP) — Guía de pruebas
 
-**Status:** ready to run  
-**Audience:** QA / developer verifying Phase 1 before client demo or UAT  
-**Scope source:** [plan/2. Requerimientos.md](../plan/2.%20Requerimientos.md) §6 MVP  
+**Estado:** lista para ejecutar  
+**Audiencia:** QA / desarrollador que verifica la Fase 1 antes de demo con cliente o UAT  
+**Fuente de alcance:** [plan/2. Requerimientos.md](../plan/2.%20Requerimientos.md) §6 MVP  
 
-Short live-demo path: [entregas/MVP-demo-checklist.md](../entregas/MVP-demo-checklist.md).  
-Environment setup: [mvp-dev-guide.md](mvp-dev-guide.md).
-
----
-
-## Scope
-
-This guide must prove:
-
-- Client (or Ops) can create an SR with Rate snapshot and an `SR-######` number.
-- Operations can assign/reassign, close after completion, and export hours/amounts CSV.
-- Employee can run the journey (accept → clock in/out → complete) on assigned jobs only.
-- Each role’s services table is scoped (no cross-tenant / cross-assignee leakage).
-- Client price vs employee benefit visibility matches role rules.
-- ES/EN toggle works for ops UI copy.
-- Basic complaint create works for client/ops.
-
-**Out of this phase (do not file as MVP bugs):**
-
-- Native app, PWA install, background geofencing  
-- Smart employee suggestions / map of GPS trail (Fase 2)  
-- Supervisor visits (Fase 2)  
-- QuickBooks / inventory (Fase 3)  
-- Payment gateway / payroll bank deposit  
+Ruta corta de demo en vivo: [entregas/MVP-demo-checklist.md](../entregas/MVP-demo-checklist.md).  
+Entorno: [mvp-dev-guide.md](mvp-dev-guide.md).
 
 ---
 
-## Environment
+## Alcance
+
+Esta guía debe demostrar:
+
+- El cliente (u Ops) puede crear un SR con snapshot de Rate y número `SR-######`.
+- Operations puede asignar/reasignar, cerrar tras completar y exportar CSV de horas/montos.
+- El empleado puede ejecutar la jornada (aceptar → clock in/out → completar) solo en trabajos asignados.
+- La tabla de servicios de cada rol está acotada (sin fugas entre empresas ni entre asignados).
+- La visibilidad de precio cliente vs beneficio empleado cumple las reglas por rol.
+- El toggle ES/EN funciona en el copy de ops.
+- La creación básica de queja funciona para cliente/ops.
+
+**Fuera de esta fase (no reportar como bugs del MVP):**
+
+- App nativa, instalación PWA, geofencing en segundo plano  
+- Sugerencias inteligentes de empleado / mapa de rastro GPS (Fase 2)  
+- Visitas de supervisor (Fase 2)  
+- QuickBooks / inventario (Fase 3)  
+- Pasarela de pago / depósito bancario de nómina  
+
+---
+
+## Entorno
 
 | App | URL |
 |-----|-----|
 | Frontend (Vite) | http://localhost:8080 |
 | API | http://localhost:8010 |
-| Admin (optional) | http://localhost:8010/admin/ |
+| Admin (opcional) | http://localhost:8010/admin/ |
 
-**Credentials** (password `demo1234`):
+**Credenciales** (contraseña `demo1234`):
 
-| Email | Role |
-|-------|------|
+| Email | Rol |
+|-------|-----|
 | `ops@castivas.test` | Operations |
-| `maria@abcpm.test` | Client (ABC Property Management) |
-| `ana@castivas.test` | Employee |
-| `carlos@castivas.test` | Employee |
+| `maria@abcpm.test` | Cliente (ABC Property Management) |
+| `ana@castivas.test` | Empleado |
+| `carlos@castivas.test` | Empleado |
 
-Demo unit for create: **ABC Apartments / Building 5 / Unit 215**.
+Unidad demo para crear: **ABC Apartments / Building 5 / Unit 215**.
 
-### Preconditions (stop the run if false)
+### Precondiciones (detener la corrida si alguna falla)
 
-- [ ] `docker compose -f local.yml up -d postgres django` in `back/` succeeds
-- [ ] Migrations applied: `python manage.py migrate`
-- [ ] Seed applied: `python manage.py seed_mvp_demo` (no error; safe to re-run)
-- [ ] Frontend `.env` has `VITE_API_URL=http://localhost:8010`
-- [ ] Browser can log in without CORS failures
-- [ ] Chrome (or Chromium) available; for mobile checks, DevTools responsive mode is enough
+- [ ] `docker compose -f local.yml up -d postgres django` en `back/` termina bien
+- [ ] Migraciones aplicadas: `python manage.py migrate`
+- [ ] Seed aplicado: `python manage.py seed_mvp_demo` (sin error; se puede re-ejecutar)
+- [ ] El `.env` del frontend tiene `VITE_API_URL=http://localhost:8010`
+- [ ] El navegador puede iniciar sesión sin fallos de CORS
+- [ ] Chrome (o Chromium) disponible; para móvil basta el modo responsive de DevTools
 
-### How to record
+### Cómo registrar resultados
 
-- **Pass** — expected result holds.
-- **Fail** — note step #, actual vs expected, screenshot if UI. Do not continue a chain that depended on that fail.
-- Mark **Blocked** if a precondition failed.
+- **Pass** — se cumple el resultado esperado.
+- **Fail** — anota el paso #, actual vs esperado, captura si es UI. No continúes una cadena que dependía de ese fallo.
+- Marca **Blocked** si falló una precondición.
 
 ---
 
-## Automated suite
+## Suite automatizada
 
-Run these first; they catch most regressions.
+Ejecuta esto primero; atrapa la mayoría de regresiones.
 
 ### Backend (pytest)
 
 ```bash
 cd back
 docker compose -f local.yml run --rm django pytest cleaning/ops -q
-# Expected: 109+ passed (count may grow)
+# Esperado: 109+ passed (el conteo puede crecer)
 ```
 
-Full suite:
+Suite completa:
 
 ```bash
 docker compose -f local.yml run --rm django pytest
 ```
 
-### Frontend unit (Vitest)
+### Frontend unitario (Vitest)
 
 ```bash
 cd front
 npm test
-# Expected: all files green (roles, opsApi, opsCopy, …)
+# Esperado: todos los archivos en verde (roles, opsApi, opsCopy, …)
 ```
 
-### End-to-end (Playwright)
+### Extremo a extremo (Playwright)
 
-Backend must be up and seeded. Playwright starts Vite on **:8090** (CORS-whitelisted).
+El backend debe estar arriba y con seed. Playwright arranca Vite en **:8090** (CORS permitido).
 
 ```bash
 cd front
@@ -104,16 +104,16 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-Optional against an already running SPA:
+Opcional contra un SPA ya en marcha:
 
 ```bash
 E2E_BASE_URL=http://localhost:8080 npm run test:e2e
 ```
 
-Covers: client creates SR → ops assigns Ana → journey → scoped lists → employee never sees client price / other jobs.
+Cubre: cliente crea SR → ops asigna a Ana → jornada → listas acotadas → el empleado nunca ve precio cliente / trabajos ajenos.
 
-| Suite | Command | Result (date / tester) |
-|-------|---------|------------------------|
+| Suite | Comando | Resultado (fecha / tester) |
+|-------|---------|----------------------------|
 | pytest ops | `… pytest cleaning/ops` | |
 | vitest | `npm test` | |
 | playwright | `npm run test:e2e` | |
@@ -122,121 +122,122 @@ Covers: client creates SR → ops assigns Ana → journey → scoped lists → e
 
 ## Happy path (manual)
 
-Use a clean browser profile or private window. Prefer creating a **new** SR so seed samples are not required.
+Usa un perfil limpio o ventana privada. Preferible crear un **SR nuevo** para no depender de las muestras del seed.
 
-### A. Client creates SR
+### A. Cliente crea SR
 
-1. Login as `maria@abcpm.test`.
-2. Open **Services** → create new request.
-3. Choose Unit **215**, an active service that has a rate (e.g. regular clean for category B).
-4. Fill schedule / access fields as required; submit.
+1. Inicia sesión como `maria@abcpm.test`.
+2. Abre **Services** → crear nueva solicitud.
+3. Elige la unidad **215**, un servicio activo con Rate (p. ej. limpieza regular categoría B).
+4. Completa agenda / acceso según se pida; envía.
 
-**Expect:** SR number `SR-######` shown; client **price** visible on create/detail; Maria’s services list includes the new row.
-
-- [ ] Pass / Fail — ________
-
-### B. Operations assigns
-
-1. Login as `ops@castivas.test`.
-2. Open **Queue** (or services list) → open the new SR.
-3. Assign **Ana García** (`ana@castivas.test`); save.
-
-**Expect:** Status assigned; Ana selectable from employees list.
+**Esperado:** redirige a la lista de solicitudes (`/services`); toast de éxito con `SR-######`; el **precio** cliente es visible en detalle; la lista de Maria incluye la nueva fila.
 
 - [ ] Pass / Fail — ________
 
-### C. Assignment notification
+### B. Operations asigna
 
-1. Login as `ana@castivas.test`.
-2. Open in-app notifications.
+1. Inicia sesión como `ops@castivas.test`.
+2. Abre **Queue** (o la lista de servicios) → abre el SR nuevo.
+3. Asigna a **Ana García** (`ana@castivas.test`); guarda.
 
-**Expect:** Notification for the new assignment (RF-PLAT-3).
+**Esperado:** estado asignado; Ana aparece en la lista de empleados.
 
 - [ ] Pass / Fail — ________
 
-### D. Employee journey
+### C. Notificación de asignación
 
-1. As Ana, open the assigned SR → **Journey**.
-2. **Accept** → **Clock in** (allow geolocation if prompted) → **Clock out** → **Complete**.
+1. Inicia sesión como `ana@castivas.test`.
+2. Abre las notificaciones in-app.
 
-**Expect:** Each step succeeds; status progresses to completed. Optional: repeat at phone width (~390px) — controls usable without horizontal scroll.
+**Esperado:** notificación de la nueva asignación (RF-PLAT-3).
+
+- [ ] Pass / Fail — ________
+
+### D. Jornada del empleado
+
+1. Como Ana, abre el SR asignado → **Journey**.
+2. **Accept** → **Clock in** (permite geolocalización si el navegador lo pide) → **Clock out** → **Complete**.
+
+**Esperado:** cada paso tiene éxito; el estado avanza a completed. Opcional: repetir a ancho de teléfono (~390px) — controles usables sin scroll horizontal.
 
 - [ ] Pass / Fail — ________  
-- [ ] Pass / Fail (mobile width) — ________
+- [ ] Pass / Fail (ancho móvil) — ________
 
-### E. Operations closes + CSV
+### E. Operations cierra + CSV
 
-1. As Ops, open the completed SR → **Close**.
-2. Download hours/amounts report (`Reports` UI or `GET /api/reports/hours.csv?from=YYYY-MM-DD&to=YYYY-MM-DD`).
+1. Como Ops, abre el SR completed → **Close**.
+2. Descarga el reporte de horas/montos (UI de Reports o `GET /api/reports/hours.csv?from=YYYY-MM-DD&to=YYYY-MM-DD`).
 
-**Expect:** SR closed; CSV downloads with hours and snapshot amounts (client price / employee benefit columns present).
+**Esperado:** SR cerrado; el CSV descarga con horas y montos del snapshot (columnas de precio cliente / beneficio empleado presentes).
 
-- [ ] Pass / Fail (close) — ________  
+- [ ] Pass / Fail (cierre) — ________  
 - [ ] Pass / Fail (CSV) — ________
 
 ### F. i18n
 
-1. As any role, toggle **ES / EN** in the shell.
-2. Reload the page.
+1. Con cualquier rol autenticado, usa las banderas ES/EN en la **barra superior** (también están en login).
+2. Navega a **Perfil** y a Solicitudes; cambia de idioma sin recargar.
+3. Recarga la página.
 
-**Expect:** Ops/auth copy language changes and persists (`localStorage` key `cleaning-auth-locale`).
-
-- [ ] Pass / Fail — ________
-
----
-
-## Permissions / isolation
-
-| # | Case | Steps | Expect | Result |
-|---|------|-------|--------|--------|
-| P1 | Employee cannot create SR | Login Ana → open `/services/new` or POST create | UI blocked / API 403 | |
-| P2 | Employee A ≠ B jobs | Login `carlos@castivas.test` after Ana was assigned a new SR | Carlos does **not** see Ana’s SR | |
-| P3 | Employee hides client price | As Ana on an assigned SR | No client `$` price; benefit may show | |
-| P4 | Client sees only own company | As Maria, services list | Only ABC rows; no other companies | |
-| P5 | Client cannot assign/close | As Maria on an SR detail | No assign/close actions (or API 403) | |
-| P6 | Ops sees queue | As Ops | Pending/assigned SRs visible across clients | |
-| P7 | Masters ops-only | As Maria or Ana open `/masters` | Redirect / denied | |
-| P8 | Reassign journey | Ops assigns Ana → Ana accepts → Ops reassigns to Carlos | Carlos can accept; Ana cannot continue old journey | |
-
----
-
-## Edges and known gaps
-
-| Case | Phase 1 behavior | Follow-up |
-|------|------------------|-----------|
-| Service with no Rate | Create blocked (400 / validation) | Ops maintains Rates |
-| `requires_notes` service | Blank special instructions → 400 | — |
-| Inactive service | Cannot select / 400 | — |
-| GPS denied by browser | Journey still records; `inside_geofence` may be null | Property lat/radius data quality |
-| Seed without DEBUG | Command errors unless `--force` | Never `--force` on shared prod |
-| Ops dashboard KPIs (RF-REP-1) | May be thin vs RF | Enhance later |
-| Photo UX polish (RF-EMP-4) | Basic evidence path; do not block on gallery polish | Fase 1.x |
-| Employee suggestion (RF-OPS-2) | Manual picker only | Fase 2 |
-
----
-
-## Complaints (smoke)
-
-1. Login as Maria → **New complaint** linked to unit 215 (optional SR).
-2. Submit.
-
-**Expect:** Complaint created; Ops can see/manage it (list or detail per current UI).
+**Esperado:** nav, pantallas ops y Perfil cambian de idioma al instante y persisten (`localStorage` `cleaning-auth-locale`).
 
 - [ ] Pass / Fail — ________
 
 ---
 
-## Run summary
+## Permisos / aislamiento
 
-| Area | Pass | Fail | Blocked |
+| # | Caso | Pasos | Esperado | Resultado |
+|---|------|-------|----------|-----------|
+| P1 | Empleado no puede crear SR | Login Ana → abrir `/services/new` o POST create | UI bloqueada / API 403 | |
+| P2 | Trabajos empleado A ≠ B | Login `carlos@castivas.test` tras asignar un SR nuevo a Ana | Carlos **no** ve el SR de Ana | |
+| P3 | Empleado oculta precio cliente | Como Ana en un SR asignado | Sin precio `$` del cliente; el beneficio puede verse | |
+| P4 | Cliente solo ve su empresa | Como Maria, lista de servicios | Solo filas ABC; sin otras empresas | |
+| P5 | Cliente no puede asignar/cerrar | Como Maria en detalle de SR | Sin acciones assign/close (o API 403) | |
+| P6 | Ops ve la cola | Como Ops | SRs pendientes/asignados visibles entre clientes | |
+| P7 | Maestros solo ops | Como Maria o Ana abrir `/masters` | Redirect / denegado | |
+| P8 | Reasignar jornada | Ops asigna Ana → Ana acepta → Ops reasigna a Carlos | Carlos puede aceptar; Ana no continúa la jornada anterior | |
+
+---
+
+## Bordes y huecos conocidos
+
+| Caso | Comportamiento Fase 1 | Seguimiento |
+|------|----------------------|-------------|
+| Servicio sin Rate | Alta bloqueada (400 / validación) | Ops mantiene Rates |
+| Servicio `requires_notes` | Instrucciones especiales vacías → 400 | — |
+| Servicio inactivo | No se puede elegir / 400 | — |
+| GPS denegado por el navegador | La jornada igual registra; `inside_geofence` puede ser null | Calidad de lat/radio del predio |
+| Seed sin DEBUG | El comando falla salvo `--force` | Nunca `--force` en prod compartida |
+| KPIs del dashboard ops (RF-REP-1) | Puede estar delgado vs RF | Mejorar después |
+| Pulido UX de fotos (RF-EMP-4) | Camino básico de evidencia; no bloquear por galería | Fase 1.x |
+| Sugerencia de empleado (RF-OPS-2) | Solo picker manual | Fase 2 |
+
+---
+
+## Quejas (smoke)
+
+1. Login como Maria → **New complaint** ligada a la unidad 215 (SR opcional).
+2. Enviar.
+
+**Esperado:** queja creada; Ops puede verla/gestionarla (lista o detalle según la UI actual).
+
+- [ ] Pass / Fail — ________
+
+---
+
+## Resumen de corrida
+
+| Área | Pass | Fail | Blocked |
 |------|-----:|-----:|--------:|
-| Automated (pytest / vitest / e2e) | | | |
+| Automatizado (pytest / vitest / e2e) | | | |
 | Happy path A–F | | | |
-| Permissions P1–P8 | | | |
-| Complaints | | | |
+| Permisos P1–P8 | | | |
+| Quejas | | | |
 
-| Date | Tester | Build / commit (back · front) | Overall |
-|------|--------|-------------------------------|---------|
+| Fecha | Tester | Build / commit (back · front) | Resultado global |
+|-------|--------|-------------------------------|------------------|
 | | | | Pass / Fail |
 
-Paste this table into the entrega note or PR when handing off Phase 1.
+Pega esta tabla en la nota de entrega o el PR al cerrar la Fase 1.
