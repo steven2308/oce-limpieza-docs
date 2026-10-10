@@ -41,7 +41,8 @@ docker compose -f local.yml exec django python manage.py migrate
 docker compose -f local.yml exec django python manage.py seed_mvp_demo
 ```
 
-`seed_mvp_demo` exige `DEBUG=True` (por defecto en local) o `--force`. Es idempotente.
+`seed_mvp_demo` exige `DEBUG=True` (por defecto en local) o `--force`. Es idempotente.  
+Migraciones ops relevantes incluyen dirección/geo (`0008`) y **fotos de jornada** (`0009_journeyphoto`).
 
 Stack completo opcional (Redis, Celery, scheduler):
 
@@ -81,7 +82,7 @@ Contraseña para todos: **`demo1234`**
 | `ana@castivas.test` | Empleado | `EmployeeProfile` activo |
 | `carlos@castivas.test` | Empleado | `EmployeeProfile` activo |
 
-Árbol demo: ABC Apartments (215 West 95th St, NY 10025 + geo) → Building 5 → **Unit 215** (categoría B). Captura unificada: `POST /api/properties/capture/` reutiliza propiedad por dirección+ZIP. El seed también crea servicios Form. 1, categorías A/B/C, Rates A/B/C y SRs de ejemplo.
+Árbol demo: ABC Apartments (215 West 95th St, NY 10025 + geo) → Building 5 → **Unit 215** (categoría B). Captura unificada: `POST /api/properties/capture/` reutiliza propiedad por dirección+ZIP; flag `is_single_family` fuerza unidad `1` bajo edificio Main. El seed también crea servicios Form. 1, categorías A/B/C, Rates A/B/C y SRs de ejemplo.
 
 ---
 
@@ -91,8 +92,8 @@ Contraseña para todos: **`demo1234`**
 
 | Ruta | Rol |
 |------|-----|
-| `cleaning/ops/models/` | Catálogo, parties, predios, SR, jornada, quejas |
-| `cleaning/ops/services/` | Resolución de Rate, asignación, jornada, scoping, quejas |
+| `cleaning/ops/models/` | Catálogo, parties, predios, SR, jornada (`JourneyEvent`, `JourneyPhoto`), quejas |
+| `cleaning/ops/services/` | Resolución de Rate, asignación, jornada, captura de predios, scoping, quejas |
 | `cleaning/ops/api/` | Serializers DRF, permisos, viewsets |
 | `cleaning/ops/management/commands/seed_mvp_demo.py` | Seed demo |
 | `cleaning/ops/tests/` | Suite pytest de ops |
@@ -107,10 +108,11 @@ El paquete Python se llama **`cleaning`** (ya no `limpieza`).
 |------|-----|
 | `src/services/opsApi.ts` | Cliente HTTP de ops |
 | `src/utils/roles.ts` | `canAccess` / helpers de rol |
-| `src/pages/ops/*` | Maestros, cola, alta/detalle SR, jornada, quejas |
+| `src/pages/ops/*` | Maestros, cola/dashboard, alta/detalle/edición SR, jornada+fotos, quejas, **Reports** |
 | `src/i18n/opsCopy.ts` | Copy ops ES/EN |
-| `src/router/index.ts` | Rutas + `meta.roles` |
-| `e2e/` | Happy path Playwright |
+| `src/router/index.ts` | Rutas + `meta.roles` (`/reports`, `/queue`, `/masters`, …) |
+| `public/favicon.svg` | Marca Castivas (SVG) |
+| `e2e/` | Happy path Playwright (incluye upload de foto) |
 
 ---
 
@@ -120,15 +122,17 @@ Se resuelven en `/api/users/me/` como `role`: `operations` | `employee` | `clien
 
 | Capacidad | Operations | Cliente | Empleado |
 |-----------|:----------:|:-------:|:--------:|
-| Maestros (categorías, rates, empresas, …) | ✓ | | |
-| Cola ops + asignar/cerrar | ✓ | | |
+| Maestros (categorías, rates, empresas, propiedades, edificios, unidades) | ✓ | | |
+| Cola ops + dashboard de conteos | ✓ | | |
+| Editar SR (`pending_review` / `assigned`) | ✓ | | |
+| Asignar / cerrar | ✓ | | |
 | Crear SR | ✓ | ✓ | |
 | Listar SR (acotado) | todos | su empresa | asignados a sí |
 | Ver precio cliente | ✓ | ✓ | |
 | Ver beneficio empleado | ✓ | | ✓ (propio) |
-| Acciones de jornada | | | solo asignado |
+| Acciones de jornada + fotos | | | solo asignado |
 | Crear queja | ✓ | ✓ | |
-| Reporte CSV de horas | ✓ | | |
+| Informes CSV de horas | ✓ | | |
 
 Guard del router: `meta.roles` en rutas Vue; la API aplica las mismas reglas (no confiar solo en la UI).
 
@@ -140,27 +144,34 @@ Prefijo: `/api/`. Cookie de sesión tras `POST /api/auth/login/`.
 
 | Recurso | Notas |
 |---------|--------|
-| `service-requests/` | Listar/crear/detalle; acciones: `assign/`, `close/`, jornada (`accept/`, `reject/`, `en_route/`, `arrive/`, `clock_in/`, `break_start/`, `break_end/`, `clock_out/`, `complete/`) |
+| `service-requests/` | Listar/crear/detalle/`PATCH` (ops, solo pending/assigned); acciones: `assign/`, `close/`, jornada (`accept/`, `reject/`, `en_route/`, `arrive/`, `clock_in/`, `break_start/`, `break_end/`, `clock_out/`, `complete/`), `photos/` (GET/POST multipart, máx. 10) |
 | `employees/` | Empleados activos para el picker de asignación |
 | `service-types/`, `services/`, `property-categories/`, `rates/` | CRUD de catálogo (ops) |
 | `client-companies/`, `properties/`, `buildings/`, `units/` | Jerarquía |
+| `properties/capture/` | Alta/reuso por dirección+ZIP; `is_single_family` → unidad `1` |
 | `complaints/` | Crear / gestionar |
 | `reports/hours.csv` | Export ops (query `from`, `to`) |
+| `reports/dashboard/` | Conteos por estado + urgentes/emergencias abiertas (ops) |
 | `users/me/` | Perfil + `role` |
 | `notifications/` | Notificaciones in-app (asignación, etc.) |
 
-Al crear un SR se hace snapshot de `client_price` / `employee_benefit` vía `resolve_rate`. Sin Rate → 400. Los empleados no pueden crear SRs (403).
+Al crear un SR se hace snapshot de `client_price` / `employee_benefit` vía `resolve_rate`. Sin Rate → 400. Los empleados no pueden crear SRs (403).  
+`complete` (y `clock_out` con `completed=true`) exige **≥1** `JourneyPhoto` en el SR.
+
+MEDIA: fotos en `MEDIA_ROOT` bajo `journey_photos/…` (servidas en local vía `MEDIA_URL`).
 
 ---
 
 ## Flujo de dominio (happy path)
 
 ```text
-Cliente/Ops crea SR (snapshot de Rate)
+Cliente/Ops crea SR (snapshot de Rate; captura o unidad existente)
+    → Ops edita si hace falta (pending/assigned)
     → Ops asigna empleado (+ notifica)
-    → Empleado accept → … → clock_in / breaks → clock_out → complete
-    → Ops cierra el SR
-    → Ops exporta CSV de horas/montos
+    → Empleado accept → clock_in / breaks → clock_out
+    → Empleado sube foto(s) → complete
+    → Ops revisa evidencias / cierra el SR
+    → Ops exporta CSV desde Informes; ve conteos en Cola
 ```
 
 Reasignar a otro empleado escribe un límite de jornada `reassigned` para que el nuevo asignado pueda aceptar.
@@ -174,6 +185,7 @@ Estados relevantes: `pending_review` → `assigned` → jornada → `completed` 
 ```bash
 # Tests backend (solo ops — rápido)
 docker compose -f local.yml run --rm django pytest cleaning/ops -q
+# Esperado reciente: 125+ passed
 
 # Suite backend completa
 docker compose -f local.yml run --rm django pytest
@@ -182,7 +194,7 @@ docker compose -f local.yml run --rm django pytest
 docker compose -f local.yml run --rm django python manage.py makemigrations
 docker compose -f local.yml run --rm django python manage.py migrate
 
-# Tests unitarios frontend
+# Tests unitarios frontend (Node 20)
 cd front && npm test
 
 # e2e frontend (API arriba + seed)
@@ -206,6 +218,7 @@ docker compose -f local.yml run --rm --no-deps django \
 4. Scoping por rol: otros roles deben recibir 403 / lista vacía según corresponda.
 5. Actualiza el seed solo si el demo necesita fixtures nuevos; mantén `seed_mvp_demo` idempotente.
 6. Extiende Playwright solo en caminos críticos entre roles.
+7. Actualiza [mvp-testing-guide.md](mvp-testing-guide.md) si el camino de verificación cambia.
 
 ---
 
@@ -215,20 +228,21 @@ No inviertas esfuerzo de Fase 1 aquí salvo que producto reabra el alcance:
 
 | Tema | Estado |
 |------|--------|
-| App nativa / PWA / geofence en segundo plano | Fuera (web + GPS al abrir) |
-| Sugerencia inteligente de empleado (distancia/carga) | Fase 2 |
+| App nativa / PWA / geofence en segundo plano | Fuera (web + GPS al tocar) |
+| Sugerencia inteligente de empleado (RF-OPS-2) | Fase 2 — picker manual en MVP |
 | Visitas de supervisor | Fase 2 |
 | QuickBooks / inventario | Fase 3 |
-| Contadores del dashboard ops (RF-REP-1) | Delgado / incompleto vs RF |
-| Edición rica del SR antes de asignar (RF-OPS-1) | Parcial |
-| UX de galería de fotos | La jornada admite evidencia; el pulido puede seguir |
-| Logo final de Castivas | Favicon SVG teal temporal (`public/favicon.svg`) |
+| Filtros ricos de la tabla de servicios (RF-REP-3) | Listado por rol listo; filtros avanzados pueden ampliarse |
+| Galería de fotos (UI rica / lightbox) | Upload + obligatoriedad al complete listos; pulido visual opcional |
+| Logo / branding final Castivas | Favicon SVG en `front/public/favicon.svg` |
+
+**Ya cubierto en Fase 1 (no listar como pendiente):** dashboard de conteos (RF-REP-1), edición SR antes de asignar (RF-OPS-1), fotos de jornada con gate al complete (RF-EMP-4), UI de Informes CSV, pestaña Edificios, atajo casa unifamiliar.
 
 ---
 
 ## Documentos relacionados
 
-- [Guía de pruebas MVP](mvp-testing-guide.md)
+- [Guía de pruebas MVP](mvp-testing-guide.md) — recorrido completo A–J
 - [Checklist smoke de demo MVP](../entregas/MVP-demo-checklist.md)
 - [back/README.md](../../back/README.md) · [front/README.md](../../front/README.md)
 - Plan de implementación: [superpowers/plans/2026-10-09-mvp-castivas-cleaning.md](../superpowers/plans/2026-10-09-mvp-castivas-cleaning.md)

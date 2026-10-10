@@ -1,11 +1,13 @@
 # Fase 1 (MVP) — Guía de pruebas
 
-**Estado:** lista para ejecutar  
+**Estado:** lista para ejecutar (actualizada tras cierre de huecos MVP: reportes UI, edición SR, dashboard, edificios, casa unifamiliar, fotos de jornada)  
 **Audiencia:** QA / desarrollador que verifica la Fase 1 antes de demo con cliente o UAT  
 **Fuente de alcance:** [plan/2. Requerimientos.md](../plan/2.%20Requerimientos.md) §6 MVP  
 
 Ruta corta de demo en vivo: [entregas/MVP-demo-checklist.md](../entregas/MVP-demo-checklist.md).  
 Entorno: [mvp-dev-guide.md](mvp-dev-guide.md).
+
+Sigue las secciones **en orden**. Al terminar A–J + permisos + quejas habrás recorrido el MVP completo.
 
 ---
 
@@ -13,12 +15,13 @@ Entorno: [mvp-dev-guide.md](mvp-dev-guide.md).
 
 Esta guía debe demostrar:
 
-- El cliente (u Ops) puede crear un SR con snapshot de Rate y número `SR-######`.
-- Operations puede asignar/reasignar, cerrar tras completar y exportar CSV de horas/montos.
-- El empleado puede ejecutar la jornada (aceptar → clock in/out → completar) solo en trabajos asignados.
+- El cliente (u Ops) puede crear un SR con snapshot de Rate y número `SR-######` (unidad existente o captura de dirección).
+- Operations edita datos del SR antes de asignar, ve conteos en la cola, asigna/reasigna, cierra tras completar y exporta CSV desde **Informes**.
+- El empleado ejecuta la jornada (aceptar → clock in/out → **foto** → completar) solo en trabajos asignados.
 - La tabla de servicios de cada rol está acotada (sin fugas entre empresas ni entre asignados).
 - La visibilidad de precio cliente vs beneficio empleado cumple las reglas por rol.
-- El toggle ES/EN funciona en el copy de ops.
+- Maestros ops: categorías, servicios, tarifas, propiedades, **edificios**, unidades.
+- El toggle ES/EN funciona en el copy de ops (nav, pantallas, Perfil).
 - La creación básica de queja funciona para cliente/ops.
 
 **Fuera de esta fase (no reportar como bugs del MVP):**
@@ -28,6 +31,7 @@ Esta guía debe demostrar:
 - Visitas de supervisor (Fase 2)  
 - QuickBooks / inventario (Fase 3)  
 - Pasarela de pago / depósito bancario de nómina  
+- Logo corporativo final (hoy: favicon SVG Castivas en `public/favicon.svg`)  
 
 ---
 
@@ -48,16 +52,31 @@ Esta guía debe demostrar:
 | `ana@castivas.test` | Empleado |
 | `carlos@castivas.test` | Empleado |
 
-Unidad demo para crear: **ABC Apartments / Building 5 / Unit 215**.
+Unidad demo para crear: **ABC Apartments / Building 5 / Unit 215**  
+(dirección seed: 215 West 95th St, NY 10025).
+
+### Rutas útiles (SPA)
+
+| Rol | Ruta | Nombre en nav (ES) |
+|-----|------|--------------------|
+| Ops | `/queue` | Cola de operaciones (conteos + pendientes) |
+| Todos | `/services` | Solicitudes |
+| Cliente / Ops | `/services/new` | Nueva solicitud |
+| Ops | `/masters` | Catálogo (incluye Edificios) |
+| Ops | `/reports` | Informes (CSV horas/montos) |
+| Cliente / Ops | `/complaints/new` | Quejas |
+| Empleado | `/services/:id/journey` | Jornada (desde detalle) |
+| Todos | `/profile` | Perfil |
 
 ### Precondiciones (detener la corrida si alguna falla)
 
 - [ ] `docker compose -f local.yml up -d postgres django` en `back/` termina bien
-- [ ] Migraciones aplicadas: `python manage.py migrate`
+- [ ] Migraciones aplicadas (incluye `ops.0009_journeyphoto`): `python manage.py migrate`
 - [ ] Seed aplicado: `python manage.py seed_mvp_demo` (sin error; se puede re-ejecutar)
 - [ ] El `.env` del frontend tiene `VITE_API_URL=http://localhost:8010`
 - [ ] El navegador puede iniciar sesión sin fallos de CORS
 - [ ] Chrome (o Chromium) disponible; para móvil basta el modo responsive de DevTools
+- [ ] Una imagen pequeña (JPG/PNG) lista para subir en la jornada
 
 ### Cómo registrar resultados
 
@@ -76,7 +95,7 @@ Ejecuta esto primero; atrapa la mayoría de regresiones.
 ```bash
 cd back
 docker compose -f local.yml run --rm django pytest cleaning/ops -q
-# Esperado: 109+ passed (el conteo puede crecer)
+# Esperado: 125+ passed (el conteo puede crecer)
 ```
 
 Suite completa:
@@ -89,6 +108,7 @@ docker compose -f local.yml run --rm django pytest
 
 ```bash
 cd front
+# Node 20 (nvm use 20)
 npm test
 # Esperado: todos los archivos en verde (roles, opsApi, opsCopy, …)
 ```
@@ -110,7 +130,7 @@ Opcional contra un SPA ya en marcha:
 E2E_BASE_URL=http://localhost:8080 npm run test:e2e
 ```
 
-Cubre: cliente crea SR → ops asigna a Ana → jornada → listas acotadas → el empleado nunca ve precio cliente / trabajos ajenos.
+Cubre: cliente crea SR → ops asigna a Ana → jornada **con foto** → listas acotadas → el empleado nunca ve precio cliente / trabajos ajenos → ops cierra.
 
 | Suite | Comando | Resultado (fecha / tester) |
 |-------|---------|----------------------------|
@@ -120,67 +140,110 @@ Cubre: cliente crea SR → ops asigna a Ana → jornada → listas acotadas → 
 
 ---
 
-## Happy path (manual)
+## Recorrido manual del MVP
 
-Usa un perfil limpio o ventana privada. Preferible crear un **SR nuevo** para no depender de las muestras del seed.
+Usa un perfil limpio o ventana privada. Preferible crear un **SR nuevo** para no depender solo de las muestras del seed.
 
-### A. Cliente crea SR
-
-1. Inicia sesión como `maria@abcpm.test`.
-2. Abre **Services** → crear nueva solicitud.
-3. Elige la unidad **215**, un servicio activo con Rate (p. ej. limpieza regular categoría B).
-4. Completa agenda / acceso según se pida; envía.
-
-**Esperado:** redirige a la lista de solicitudes (`/services`); toast de éxito con `SR-######`; el **precio** cliente es visible en detalle; la lista de Maria incluye la nueva fila.
-
-- [ ] Pass / Fail — ________
-
-### B. Operations asigna
+### A. Ops — maestros y jerarquía de sitios
 
 1. Inicia sesión como `ops@castivas.test`.
-2. Abre **Queue** (o la lista de servicios) → abre el SR nuevo.
-3. Asigna a **Ana García** (`ana@castivas.test`); guarda.
+2. Abre **Catálogo** (`/masters`).
+3. Revisa pestañas: Categorías, Servicios, Tarifas, Propiedades, **Edificios**, Unidades.
+4. Confirma que existen categorías A/B/C y rates (p. ej. regular × B).
+5. En **Edificios**, confirma Building 5 bajo ABC Apartments (o crea uno de prueba bajo una propiedad).
 
-**Esperado:** estado asignado; Ana aparece en la lista de empleados.
+**Esperado:** tablas cargan; CRUD básico operable solo para Ops.
 
 - [ ] Pass / Fail — ________
 
-### C. Notificación de asignación
+### B. Ops — cola y dashboard (RF-REP-1)
+
+1. Abre **Cola de operaciones** (`/queue`).
+2. Mira el bloque **Resumen** (chips por estado, urgentes/emergencias abiertas, total).
+
+**Esperado:** conteos visibles; tabla con pendientes de asignar y/o por cerrar.
+
+- [ ] Pass / Fail — ________
+
+### C. Cliente crea SR (unidad existente)
+
+1. Inicia sesión como `maria@abcpm.test`.
+2. Abre **Solicitudes** → **Nueva solicitud** (`/services/new`).
+3. Modo **Unidad existente**: elige propiedad ABC / unidad **215**, un servicio activo con Rate.
+4. Completa fecha/hora, flexibilidad, acceso; envía.
+
+**Esperado:** redirige a `/services`; toast con `SR-######`; precio cliente visible para Maria; la lista incluye la fila nueva. Anota el número: **SR-______**.
+
+- [ ] Pass / Fail — ________
+
+### D. Ops crea SR por captura (casa unifamiliar) — opcional pero recomendado
+
+1. Como Ops, `/services/new` → **Registrar dirección nueva**.
+2. Activa **Casa unifamiliar** (oculta etiqueta de unidad; fuerza unidad `1` / edificio Main).
+3. Elige propietario ABC, completa dirección distinta a la del seed, área/baños, servicio y agenda; envía.
+
+**Esperado:** SR creado; en maestros aparece la propiedad/unidad `1` bajo Main.
+
+- [ ] Pass / Fail — ________ · N/A si se omite — ________
+
+### E. Ops edita SR antes de asignar (RF-OPS-1)
+
+1. Como Ops, abre el SR de la sección C (estado `pending_review`).
+2. En **Editar solicitud**, cambia p. ej. instrucciones de acceso y/o prioridad a **Urgente**; guarda.
+
+**Esperado:** toast/aviso de guardado; detalle refleja los cambios; si priorizaste urgente, el chip/conteo de urgentes puede subir al refrescar la cola.
+
+- [ ] Pass / Fail — ________
+
+### F. Operations asigna (RF-OPS-3)
+
+1. En el mismo detalle, asigna a **Ana García** (`ana@castivas.test`); guarda.
+
+**Esperado:** estado asignado; redirige a la cola; Ana deja de aparecer como pendiente de asignación para ese SR.
+
+- [ ] Pass / Fail — ________
+
+### G. Notificación de asignación (RF-PLAT-3)
 
 1. Inicia sesión como `ana@castivas.test`.
 2. Abre las notificaciones in-app.
 
-**Esperado:** notificación de la nueva asignación (RF-PLAT-3).
+**Esperado:** notificación de la nueva asignación.
 
 - [ ] Pass / Fail — ________
 
-### D. Jornada del empleado
+### H. Jornada del empleado (RF-EMP-*)
 
-1. Como Ana, abre el SR asignado → **Journey**.
-2. **Accept** → **Clock in** (permite geolocalización si el navegador lo pide) → **Clock out** → **Complete**.
+1. Como Ana, abre el SR asignado → **Iniciar jornada**.
+2. **Aceptar** → **Marcar entrada** (permite geolocalización si el navegador lo pide) → **Marcar salida**.
+3. En **Fotos de evidencia**, sube al menos **una** imagen (máx. 10). Notas opcionales.
+4. **Completar servicio** (el botón permanece deshabilitado sin foto).
 
-**Esperado:** cada paso tiene éxito; el estado avanza a completed. Opcional: repetir a ancho de teléfono (~390px) — controles usables sin scroll horizontal.
+**Esperado:** cada paso tiene éxito; estado `completed`. Sin foto, Complete falla o no se habilita. Opcional: repetir a ~390px de ancho.
 
 - [ ] Pass / Fail — ________  
+- [ ] Pass / Fail (foto obligatoria) — ________  
 - [ ] Pass / Fail (ancho móvil) — ________
 
-### E. Operations cierra + CSV
+### I. Ops cierra + evidencia + CSV (RF-OPS-5, RF-REP-2)
 
-1. Como Ops, abre el SR completed → **Close**.
-2. Descarga el reporte de horas/montos (UI de Reports o `GET /api/reports/hours.csv?from=YYYY-MM-DD&to=YYYY-MM-DD`).
+1. Como Ops, abre el SR completed.
+2. Confirma en detalle: conteo de **Fotos** ≥ 1 y flag GPS (con/sin según permisos del navegador).
+3. **Cerrar solicitud**.
+4. Abre **Informes** (`/reports`) → elige rango de fechas que cubra el SR → **Descargar CSV**.
 
-**Esperado:** SR cerrado; el CSV descarga con horas y montos del snapshot (columnas de precio cliente / beneficio empleado presentes).
+**Esperado:** SR `closed`; CSV con columnas `number, employee, unit, service, hours_net, client_price, employee_benefit, status` y la fila del SR.
 
 - [ ] Pass / Fail (cierre) — ________  
-- [ ] Pass / Fail (CSV) — ________
+- [ ] Pass / Fail (CSV UI) — ________
 
-### F. i18n
+### J. i18n (RF-PLAT-2)
 
 1. Con cualquier rol autenticado, usa las banderas ES/EN en la **barra superior** (también están en login).
-2. Navega a **Perfil** y a Solicitudes; cambia de idioma sin recargar.
+2. Navega a **Perfil**, Cola/Solicitudes e Informes (si ops); cambia de idioma sin recargar.
 3. Recarga la página.
 
-**Esperado:** nav, pantallas ops y Perfil cambian de idioma al instante y persisten (`localStorage` `cleaning-auth-locale`).
+**Esperado:** nav, pantallas ops y Perfil cambian al instante y persisten (`localStorage` `cleaning-auth-locale`).
 
 - [ ] Pass / Fail — ________
 
@@ -194,10 +257,12 @@ Usa un perfil limpio o ventana privada. Preferible crear un **SR nuevo** para no
 | P2 | Trabajos empleado A ≠ B | Login `carlos@castivas.test` tras asignar un SR nuevo a Ana | Carlos **no** ve el SR de Ana | |
 | P3 | Empleado oculta precio cliente | Como Ana en un SR asignado | Sin precio `$` del cliente; el beneficio puede verse | |
 | P4 | Cliente solo ve su empresa | Como Maria, lista de servicios | Solo filas ABC; sin otras empresas | |
-| P5 | Cliente no puede asignar/cerrar | Como Maria en detalle de SR | Sin acciones assign/close (o API 403) | |
-| P6 | Ops ve la cola | Como Ops | SRs pendientes/asignados visibles entre clientes | |
+| P5 | Cliente no puede asignar/cerrar/editar | Como Maria en detalle de SR | Sin edit/assign/close (o API 403) | |
+| P6 | Ops ve cola + informes | Como Ops `/queue` y `/reports` | Conteos y descarga CSV | |
 | P7 | Maestros solo ops | Como Maria o Ana abrir `/masters` | Redirect / denegado | |
-| P8 | Reasignar jornada | Ops asigna Ana → Ana acepta → Ops reasigna a Carlos | Carlos puede aceptar; Ana no continúa la jornada anterior | |
+| P8 | Informes solo ops | Como Maria o Ana abrir `/reports` | Redirect / denegado | |
+| P9 | Reasignar jornada | Ops asigna Ana → Ana acepta → Ops reasigna a Carlos | Carlos puede aceptar; Ana no continúa la jornada anterior | |
+| P10 | Complete sin foto | Ana en jornada sin subir imagen → Complete | 400 / botón deshabilitado; SR no completed | |
 
 ---
 
@@ -210,15 +275,17 @@ Usa un perfil limpio o ventana privada. Preferible crear un **SR nuevo** para no
 | Servicio inactivo | No se puede elegir / 400 | — |
 | GPS denegado por el navegador | La jornada igual registra; `inside_geofence` puede ser null | Calidad de lat/radio del predio |
 | Seed sin DEBUG | El comando falla salvo `--force` | Nunca `--force` en prod compartida |
-| KPIs del dashboard ops (RF-REP-1) | Puede estar delgado vs RF | Mejorar después |
-| Pulido UX de fotos (RF-EMP-4) | Camino básico de evidencia; no bloquear por galería | Fase 1.x |
+| Editar SR ya en curso / completed | PATCH rechazado (solo `pending_review` / `assigned`) | — |
+| Más de 10 fotos | API 400 | — |
 | Sugerencia de empleado (RF-OPS-2) | Solo picker manual | Fase 2 |
+| Filtros avanzados de la tabla de servicios (RF-REP-3) | Listado por rol; filtros ricos pueden estar delgados | Fase 1.x / 2 |
+| Logo final Castivas | Favicon SVG actual | Branding |
 
 ---
 
-## Quejas (smoke)
+## Quejas (smoke) (RF-QUE-1)
 
-1. Login como Maria → **New complaint** ligada a la unidad 215 (SR opcional).
+1. Login como Maria → **Quejas** / nueva queja ligada a la unidad 215 (SR opcional; si eliges SR, preferible uno con fecha reciente).
 2. Enviar.
 
 **Esperado:** queja creada; Ops puede verla/gestionarla (lista o detalle según la UI actual).
@@ -232,8 +299,8 @@ Usa un perfil limpio o ventana privada. Preferible crear un **SR nuevo** para no
 | Área | Pass | Fail | Blocked |
 |------|-----:|-----:|--------:|
 | Automatizado (pytest / vitest / e2e) | | | |
-| Happy path A–F | | | |
-| Permisos P1–P8 | | | |
+| Happy path A–J | | | |
+| Permisos P1–P10 | | | |
 | Quejas | | | |
 
 | Fecha | Tester | Build / commit (back · front) | Resultado global |

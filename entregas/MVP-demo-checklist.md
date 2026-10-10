@@ -69,13 +69,16 @@ Legend: **✅ Playwright 2026-10-09** = verified in Task 17 e2e; **⬜ verify lo
 
 ### 4. Employee — journey (mobile)
 
-- [x] ✅ **2026-10-09** Login `ana@castivas.test` → assigned SR → accept → clock in → clock out → complete
+- [x] ✅ **2026-10-09** Login `ana@castivas.test` → assigned SR → accept → clock in → clock out → **upload ≥1 photo** → complete
 - [ ] ⬜ Same flow at **phone width** (DevTools responsive); buttons usable without horizontal scroll
+- [ ] ⬜ Complete stays blocked / errors without a photo
 
 ### 5. Operations — close + report
 
 - [x] ✅ **2026-10-09** Ops closes SR after **completed** status
-- [ ] ⬜ **Export hours/amounts CSV** (`Reports` or API `GET /api/reports/hours.csv`) downloads and columns match spec
+- [ ] ⬜ **Export hours/amounts CSV** via nav **Reports** (`/reports`) or API `GET /api/reports/hours.csv`
+- [ ] ⬜ Ops **Queue** shows status / urgent / emergency counts
+- [ ] ⬜ Ops can **edit** a pending SR (access notes / priority) before assign
 
 ### 6. i18n
 
