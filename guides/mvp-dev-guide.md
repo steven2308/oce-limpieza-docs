@@ -83,7 +83,9 @@ Contraseña para todos: **`demo1234`**
 | `ana@castivas.test` | Empleado | `EmployeeProfile` activo |
 | `carlos@castivas.test` | Empleado | `EmployeeProfile` activo |
 
-Demo: ABC Apartments (215 West 95th St, NY 10025 + geo) → **Unit 215** (categoría B), dueña Maria López. Captura unificada: `POST /api/properties/capture/` reutiliza la propiedad por dirección+ZIP para cualquier dueño; si la misma unidad ya es de otro usuario, responde 400. `is_single_family` fuerza la unidad `1`. El seed también crea servicios Form. 1, categorías A/B/C, Rates A/B/C y SRs de ejemplo.
+Demo: ABC Apartments (215 West 95th St, NY 10025 + geo) → **Unit 215** (categoría B por 2 baños), dueña Maria López. La categoría de una unidad no se elige: `assign_category_for_unit` toma la banda más ajustada de área y baños; un mínimo o máximo vacío no filtra. Captura unificada: `POST /api/properties/capture/` reutiliza la propiedad por dirección+ZIP para cualquier dueño; si la misma unidad ya es de otro usuario, responde 400. `is_single_family` fuerza la unidad `1`. El seed también crea servicios Form. 1, categorías A/B/C, Rates A/B/C y SRs de ejemplo.
+
+Tras el login, Operations entra a `/queue`. Cliente y empleado entran a `/services`. Un `?next=` hacia una ruta ajena al rol se ignora y caen en ese inicio.
 
 ---
 
@@ -132,10 +134,10 @@ Se resuelven en `/api/users/me/` como `role`: `operations` | `employee` | `clien
 | Ver precio cliente | ✓ | ✓ | |
 | Ver beneficio empleado | ✓ | | ✓ (propio) |
 | Acciones de jornada + fotos | | | solo asignado |
-| Crear queja | ✓ | ✓ | |
+| Listar y crear queja | ✓ (todas) | ✓ (propias) | |
 | Informes CSV de horas | ✓ | | |
 
-Guard del router: `meta.roles` en rutas Vue; la API aplica las mismas reglas (no confiar solo en la UI).
+Guard del router: `meta.roles` en rutas Vue; si el rol no puede entrar, redirige a su inicio (`/queue` u `/services`) en lugar de la pantalla de acceso denegado. La API aplica las mismas reglas (no confiar solo en la UI).
 
 ---
 
@@ -145,12 +147,12 @@ Prefijo: `/api/`. Cookie de sesión tras `POST /api/auth/login/`.
 
 | Recurso | Notas |
 |---------|--------|
-| `service-requests/` | Listar/crear/detalle/`PATCH` (ops, solo pending/assigned); acciones: `assign/`, `close/`, jornada (`accept/`, `reject/`, `en_route/`, `arrive/`, `clock_in/`, `break_start/`, `break_end/`, `clock_out/`, `complete/`), `photos/` (GET/POST multipart, máx. 10) |
+| `service-requests/` | Listar/crear/detalle/`PATCH` (ops, solo pending/assigned). `scheduled_time` solo en minutos 00, 15, 30 o 45. Acciones: `assign/`, `close/`, jornada (`accept/`, `reject/`, `en_route/`, `arrive/`, `clock_in/`, `break_start/`, `break_end/`, `clock_out/`, `complete/`), `photos/` (GET/POST multipart, máx. 10) |
 | `employees/` | Empleados activos para el picker de asignación |
 | `service-types/`, `services/`, `property-categories/`, `rates/` | CRUD de catálogo (ops) |
-| `owners/`, `properties/`, `units/` | Dueños (usuarios client), predios y unidades |
+| `owners/`, `properties/`, `units/` | Dueños (usuarios client), predios y unidades. `category` en la unidad es de solo lectura y se recalcula al crear o editar |
 | `properties/capture/` | Alta/reuso por dirección+ZIP; `is_single_family` → unidad `1` |
-| `complaints/` | Crear / gestionar |
+| `complaints/` | Listar y crear (cliente: las suyas; ops: todas). El alta elige propiedad y luego unidad. Empleado: 403 |
 | `reports/hours.csv` | Export ops (query `from`, `to`) |
 | `reports/dashboard/` | Conteos por estado + urgentes/emergencias abiertas (ops) |
 | `users/me/` | Perfil + `role` |

@@ -1,6 +1,6 @@
 # Fase 1 (MVP) — Guía de pruebas
 
-**Estado:** lista para ejecutar (actualizada tras dueños en unidades: sin edificios ni compañías; reportes UI, edición SR, dashboard, casa unifamiliar, fotos de jornada)  
+**Estado:** lista para ejecutar (dueños en unidades; hora en cuartos; categoría automática; lista de quejas; login de cliente/empleado a solicitudes)  
 **Audiencia:** QA / desarrollador que verifica la Fase 1 antes de demo con cliente o UAT  
 **Fuente de alcance:** [plan/2. Requerimientos.md](../plan/2.%20Requerimientos.md) §6 MVP  
 
@@ -20,9 +20,9 @@ Esta guía debe demostrar:
 - El empleado ejecuta la jornada (aceptar → clock in/out → **foto** → completar) solo en trabajos asignados.
 - La tabla de servicios de cada rol está acotada (sin fugas entre dueños ni entre asignados).
 - La visibilidad de precio cliente vs beneficio empleado cumple las reglas por rol.
-- Maestros ops: categorías, servicios, tarifas, propiedades y unidades. El dueño vive en la unidad.
-- El toggle ES/EN funciona en el copy de ops (nav, pantallas, Perfil).
-- La creación básica de queja funciona para cliente/ops.
+- Maestros ops: categorías, servicios, tarifas, propiedades y unidades. El dueño vive en la unidad. La categoría de la unidad se asigna sola por área y baños (no se elige a mano).
+- El toggle ES/EN funciona en el copy de ops (nav, pantallas, Perfil). El español usa la bandera de Colombia.
+- Cliente y ops crean una queja eligiendo primero la propiedad y luego la unidad, y quedan en la lista de quejas. El empleado no ve quejas.
 
 **Fuera de esta fase (no reportar como bugs del MVP):**
 
@@ -69,7 +69,10 @@ Unidad demo para crear: **ABC Apartments / Unit 215** (dueña Maria López)
 | Cliente / Ops | `/services/new` | Nueva solicitud |
 | Ops | `/masters` | Catálogo (propiedades y unidades) |
 | Ops | `/reports` | Informes (CSV horas/montos) |
-| Cliente / Ops | `/complaints/new` | Quejas |
+| Cliente / Ops | `/complaints` | Quejas (lista) |
+| Cliente / Ops | `/complaints/new` | Nueva queja |
+
+Tras el login, Operations abre `/queue`. Cliente y empleado abren `/services`. Si el `?next=` apunta a una ruta que ese rol no puede ver, también van a su inicio (no a Acceso denegado).
 | Empleado | `/services/:id/journey` | Jornada (desde detalle) |
 | Todos | `/profile` | Perfil |
 
@@ -157,9 +160,9 @@ Usa un perfil limpio o ventana privada. Preferible crear un **SR nuevo** para no
 2. Abre **Catálogo** (`/masters`).
 3. Revisa pestañas: Categorías, Servicios, Tarifas, Propiedades, Unidades.
 4. Confirma que existen categorías A/B/C y rates (p. ej. regular × B).
-5. En **Unidades**, confirma la unidad 215 de ABC Apartments, dueña Maria López (o crea una de prueba bajo una propiedad).
+5. En **Unidades**, confirma la unidad 215 de ABC Apartments, dueña Maria López, categoría **B** (o crea una de prueba bajo una propiedad). El formulario de unidad no pide categoría.
 
-**Esperado:** tablas cargan; CRUD básico operable solo para Ops.
+**Esperado:** tablas cargan; CRUD básico operable solo para Ops. Al guardar una unidad, la categoría queda asignada por área y baños (banda más ajustada; un mínimo o máximo vacío no filtra).
 
 - [ ] Pass / Fail — ________
 
@@ -177,7 +180,7 @@ Usa un perfil limpio o ventana privada. Preferible crear un **SR nuevo** para no
 1. Inicia sesión como `maria@abcpm.test`.
 2. Abre **Solicitudes** → **Nueva solicitud** (`/services/new`).
 3. Modo **Unidad existente**: elige propiedad ABC / unidad **215**, un servicio activo con Rate.
-4. Completa fecha/hora, flexibilidad, acceso; envía.
+4. Completa fecha y hora. Los minutos solo ofrecen **00, 15, 30 o 45**. Completa flexibilidad y acceso; envía.
 
 **Esperado:** redirige a `/services`; toast con `SR-######`; precio cliente visible para Maria; la lista incluye la fila nueva. Anota el número: **SR-______**.
 
@@ -246,7 +249,7 @@ Usa un perfil limpio o ventana privada. Preferible crear un **SR nuevo** para no
 
 ### J. i18n (RF-PLAT-2)
 
-1. Con cualquier rol autenticado, usa las banderas ES/EN en la **barra superior** (también están en login).
+1. Con cualquier rol autenticado, usa las banderas en la **barra superior** (también están en login). Español es la bandera de Colombia; inglés, la de Estados Unidos.
 2. Navega a **Perfil**, Cola/Solicitudes e Informes (si ops); cambia de idioma sin recargar.
 3. Recarga la página.
 
@@ -266,8 +269,8 @@ Usa un perfil limpio o ventana privada. Preferible crear un **SR nuevo** para no
 | P4 | Cliente solo ve sus unidades | Como Maria, lista de servicios | Solo solicitudes de sus unidades; sin las de James | |
 | P5 | Cliente no puede asignar/cerrar/editar | Como Maria en detalle de SR | Sin edit/assign/close (o API 403) | |
 | P6 | Ops ve cola + informes | Como Ops `/queue` y `/reports` | Conteos y descarga CSV | |
-| P7 | Maestros solo ops | Como Maria o Ana abrir `/masters` | Redirect / denegado | |
-| P8 | Informes solo ops | Como Maria o Ana abrir `/reports` | Redirect / denegado | |
+| P7 | Maestros solo ops | Como Maria o Ana abrir `/masters` | Van a `/services`, no a Acceso denegado | |
+| P8 | Informes solo ops | Como Maria o Ana abrir `/reports` | Van a `/services`, no a Acceso denegado | |
 | P9 | Reasignar jornada | Ops asigna Ana → Ana acepta → Ops reasigna a Carlos | Carlos puede aceptar; Ana no continúa la jornada anterior | |
 | P10 | Complete sin foto | Ana en jornada sin subir imagen → Complete | 400 / botón deshabilitado; SR no completed | |
 
@@ -283,6 +286,7 @@ Usa un perfil limpio o ventana privada. Preferible crear un **SR nuevo** para no
 | GPS denegado por el navegador | La jornada igual registra; `inside_geofence` puede ser null | Calidad de lat/radio del predio |
 | Seed sin DEBUG | El comando falla salvo `--force` | Nunca `--force` en prod compartida |
 | Editar SR ya en curso / completed | PATCH rechazado (solo `pending_review` / `assigned`) | — |
+| Hora fuera de 00/15/30/45 | Alta o edición de SR → 400 | — |
 | Más de 10 fotos | API 400 | — |
 | Sugerencia de empleado (RF-OPS-2) | Solo picker manual | Fase 2 |
 | Filtros avanzados de la tabla de servicios (RF-REP-3) | Listado por rol; filtros ricos pueden estar delgados | Fase 1.x / 2 |
@@ -292,10 +296,11 @@ Usa un perfil limpio o ventana privada. Preferible crear un **SR nuevo** para no
 
 ## Quejas (smoke) (RF-QUE-1)
 
-1. Login como Maria → **Quejas** / nueva queja ligada a la unidad 215 (SR opcional; si eliges SR, preferible uno con fecha reciente).
-2. Enviar.
+1. Login como Maria → **Quejas** (`/complaints`) → **Nueva queja**.
+2. Elige la propiedad **ABC Apartments** (autocompletar). La lista de unidades solo muestra las suyas; elige **215**.
+3. Solicitud relacionada opcional (si eliges una, que sea de esa unidad). Envía.
 
-**Esperado:** queja creada; Ops puede verla/gestionarla (lista o detalle según la UI actual).
+**Esperado:** vuelve a `/complaints` y la queja aparece (propiedad, unidad, tipo, prioridad, estado). Ops, en la misma lista, ve también las quejas de otros dueños. Ana no tiene Quejas en el menú; `/complaints` la lleva a solicitudes. James no ve la queja de Maria.
 
 - [ ] Pass / Fail — ________
 
